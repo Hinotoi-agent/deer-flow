@@ -10,7 +10,9 @@ from deerflow.agents.memory.updater import (
     import_memory_data,
     update_memory_fact,
 )
+from deerflow.config.app_config import AppConfig
 from deerflow.config.memory_config import MemoryConfig
+from deerflow.config.sandbox_config import SandboxConfig
 
 
 def _make_memory(facts: list[dict[str, object]] | None = None) -> dict[str, object]:
@@ -31,8 +33,8 @@ def _make_memory(facts: list[dict[str, object]] | None = None) -> dict[str, obje
     }
 
 
-def _memory_config(**overrides: object) -> MemoryConfig:
-    return MemoryConfig().model_copy(update=overrides)
+def _memory_config(**overrides: object) -> AppConfig:
+    return AppConfig(sandbox=SandboxConfig(use="test"), memory=MemoryConfig().model_copy(update=overrides))
 
 
 def test_apply_updates_skips_existing_duplicate_and_preserves_removals() -> None:
@@ -65,7 +67,7 @@ def test_apply_updates_skips_existing_duplicate_and_preserves_removals() -> None
     }
 
     with patch(
-        "deerflow.agents.memory.updater.get_memory_config",
+        "deerflow.agents.memory.updater.get_app_config",
         return_value=_memory_config(max_facts=100, fact_confidence_threshold=0.7),
     ):
         result = updater._apply_updates(current_memory, update_data, thread_id="thread-b")
@@ -86,7 +88,7 @@ def test_apply_updates_skips_same_batch_duplicates_and_keeps_source_metadata() -
     }
 
     with patch(
-        "deerflow.agents.memory.updater.get_memory_config",
+        "deerflow.agents.memory.updater.get_app_config",
         return_value=_memory_config(max_facts=100, fact_confidence_threshold=0.7),
     ):
         result = updater._apply_updates(current_memory, update_data, thread_id="thread-42")
@@ -130,7 +132,7 @@ def test_apply_updates_preserves_threshold_and_max_facts_trimming() -> None:
     }
 
     with patch(
-        "deerflow.agents.memory.updater.get_memory_config",
+        "deerflow.agents.memory.updater.get_app_config",
         return_value=_memory_config(max_facts=2, fact_confidence_threshold=0.7),
     ):
         result = updater._apply_updates(current_memory, update_data, thread_id="thread-9")
@@ -158,7 +160,7 @@ def test_apply_updates_preserves_source_error() -> None:
     }
 
     with patch(
-        "deerflow.agents.memory.updater.get_memory_config",
+        "deerflow.agents.memory.updater.get_app_config",
         return_value=_memory_config(max_facts=100, fact_confidence_threshold=0.7),
     ):
         result = updater._apply_updates(current_memory, update_data, thread_id="thread-correction")
@@ -182,7 +184,7 @@ def test_apply_updates_ignores_empty_source_error() -> None:
     }
 
     with patch(
-        "deerflow.agents.memory.updater.get_memory_config",
+        "deerflow.agents.memory.updater.get_app_config",
         return_value=_memory_config(max_facts=100, fact_confidence_threshold=0.7),
     ):
         result = updater._apply_updates(current_memory, update_data, thread_id="thread-correction")
@@ -529,7 +531,7 @@ class TestUpdateMemoryStructuredResponse:
 
         with (
             patch.object(updater, "_get_model", return_value=self._make_mock_model(valid_json)),
-            patch("deerflow.agents.memory.updater.get_memory_config", return_value=_memory_config(enabled=True)),
+            patch("deerflow.agents.memory.updater.get_app_config", return_value=_memory_config(enabled=True)),
             patch("deerflow.agents.memory.updater.get_memory_data", return_value=_make_memory()),
             patch("deerflow.agents.memory.updater.get_memory_storage", return_value=MagicMock(save=MagicMock(return_value=True))),
         ):
@@ -552,7 +554,7 @@ class TestUpdateMemoryStructuredResponse:
 
         with (
             patch.object(updater, "_get_model", return_value=self._make_mock_model(list_content)),
-            patch("deerflow.agents.memory.updater.get_memory_config", return_value=_memory_config(enabled=True)),
+            patch("deerflow.agents.memory.updater.get_app_config", return_value=_memory_config(enabled=True)),
             patch("deerflow.agents.memory.updater.get_memory_data", return_value=_make_memory()),
             patch("deerflow.agents.memory.updater.get_memory_storage", return_value=MagicMock(save=MagicMock(return_value=True))),
         ):
@@ -574,7 +576,7 @@ class TestUpdateMemoryStructuredResponse:
 
         with (
             patch.object(updater, "_get_model", return_value=model),
-            patch("deerflow.agents.memory.updater.get_memory_config", return_value=_memory_config(enabled=True)),
+            patch("deerflow.agents.memory.updater.get_app_config", return_value=_memory_config(enabled=True)),
             patch("deerflow.agents.memory.updater.get_memory_data", return_value=_make_memory()),
             patch("deerflow.agents.memory.updater.get_memory_storage", return_value=MagicMock(save=MagicMock(return_value=True))),
         ):
@@ -599,7 +601,7 @@ class TestUpdateMemoryStructuredResponse:
 
         with (
             patch.object(updater, "_get_model", return_value=model),
-            patch("deerflow.agents.memory.updater.get_memory_config", return_value=_memory_config(enabled=True)),
+            patch("deerflow.agents.memory.updater.get_app_config", return_value=_memory_config(enabled=True)),
             patch("deerflow.agents.memory.updater.get_memory_data", return_value=_make_memory()),
             patch("deerflow.agents.memory.updater.get_memory_storage", return_value=MagicMock(save=MagicMock(return_value=True))),
         ):
@@ -644,7 +646,7 @@ class TestFactDeduplicationCaseInsensitive:
         }
 
         with patch(
-            "deerflow.agents.memory.updater.get_memory_config",
+            "deerflow.agents.memory.updater.get_app_config",
             return_value=_memory_config(max_facts=100, fact_confidence_threshold=0.7),
         ):
             result = updater._apply_updates(current_memory, update_data, thread_id="thread-b")
@@ -675,7 +677,7 @@ class TestFactDeduplicationCaseInsensitive:
         }
 
         with patch(
-            "deerflow.agents.memory.updater.get_memory_config",
+            "deerflow.agents.memory.updater.get_app_config",
             return_value=_memory_config(max_facts=100, fact_confidence_threshold=0.7),
         ):
             result = updater._apply_updates(current_memory, update_data, thread_id="thread-b")
@@ -701,7 +703,7 @@ class TestReinforcementHint:
 
         with (
             patch.object(updater, "_get_model", return_value=model),
-            patch("deerflow.agents.memory.updater.get_memory_config", return_value=_memory_config(enabled=True)),
+            patch("deerflow.agents.memory.updater.get_app_config", return_value=_memory_config(enabled=True)),
             patch("deerflow.agents.memory.updater.get_memory_data", return_value=_make_memory()),
             patch("deerflow.agents.memory.updater.get_memory_storage", return_value=MagicMock(save=MagicMock(return_value=True))),
         ):
@@ -726,7 +728,7 @@ class TestReinforcementHint:
 
         with (
             patch.object(updater, "_get_model", return_value=model),
-            patch("deerflow.agents.memory.updater.get_memory_config", return_value=_memory_config(enabled=True)),
+            patch("deerflow.agents.memory.updater.get_app_config", return_value=_memory_config(enabled=True)),
             patch("deerflow.agents.memory.updater.get_memory_data", return_value=_make_memory()),
             patch("deerflow.agents.memory.updater.get_memory_storage", return_value=MagicMock(save=MagicMock(return_value=True))),
         ):
@@ -751,7 +753,7 @@ class TestReinforcementHint:
 
         with (
             patch.object(updater, "_get_model", return_value=model),
-            patch("deerflow.agents.memory.updater.get_memory_config", return_value=_memory_config(enabled=True)),
+            patch("deerflow.agents.memory.updater.get_app_config", return_value=_memory_config(enabled=True)),
             patch("deerflow.agents.memory.updater.get_memory_data", return_value=_make_memory()),
             patch("deerflow.agents.memory.updater.get_memory_storage", return_value=MagicMock(save=MagicMock(return_value=True))),
         ):

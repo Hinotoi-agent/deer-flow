@@ -6,6 +6,9 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.gateway.routers import skills as skills_router
+from deerflow.config.app_config import AppConfig
+from deerflow.config.extensions_config import ExtensionsConfig
+from deerflow.config.sandbox_config import SandboxConfig
 from deerflow.skills.manager import get_skill_history_file
 from deerflow.skills.types import Skill
 
@@ -179,9 +182,12 @@ def test_update_skill_refreshes_prompt_cache_before_return(monkeypatch, tmp_path
         refresh_calls.append("refresh")
         enabled_state["value"] = False
 
+    _app_cfg = AppConfig(sandbox=SandboxConfig(use="test"), extensions=ExtensionsConfig(mcp_servers={}, skills={}))
+
     monkeypatch.setattr("app.gateway.routers.skills.load_skills", _load_skills)
-    monkeypatch.setattr("app.gateway.routers.skills.get_extensions_config", lambda: SimpleNamespace(mcp_servers={}, skills={}))
-    monkeypatch.setattr("app.gateway.routers.skills.reload_extensions_config", lambda: None)
+    monkeypatch.setattr("app.gateway.routers.skills.get_app_config", lambda: _app_cfg)
+    monkeypatch.setattr("app.gateway.routers.skills.init_app_config", lambda _cfg: None)
+    monkeypatch.setattr("app.gateway.routers.skills.AppConfig", type("AppConfig", (), {"from_file": staticmethod(lambda: _app_cfg)}))
     monkeypatch.setattr(skills_router.ExtensionsConfig, "resolve_config_path", staticmethod(lambda: config_path))
     monkeypatch.setattr("app.gateway.routers.skills.refresh_skills_system_prompt_cache_async", _refresh)
 
