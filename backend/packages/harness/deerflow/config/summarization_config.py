@@ -2,13 +2,15 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 ContextSizeType = Literal["fraction", "tokens", "messages"]
 
 
 class ContextSize(BaseModel):
     """Context size specification for trigger or keep parameters."""
+
+    model_config = ConfigDict(frozen=True)
 
     type: ContextSizeType = Field(description="Type of context size specification")
     value: int | float = Field(description="Value for the context size specification")
@@ -20,6 +22,8 @@ class ContextSize(BaseModel):
 
 class SummarizationConfig(BaseModel):
     """Configuration for automatic conversation summarization."""
+
+    model_config = ConfigDict(frozen=True)
 
     enabled: bool = Field(
         default=False,

@@ -2,13 +2,15 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 CheckpointerType = Literal["memory", "sqlite", "postgres"]
 
 
 class CheckpointerConfig(BaseModel):
     """Configuration for LangGraph state persistence checkpointer."""
+
+    model_config = ConfigDict(frozen=True)
 
     type: CheckpointerType = Field(
         description="Checkpointer backend type. "

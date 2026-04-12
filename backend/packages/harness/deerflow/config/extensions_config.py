@@ -11,6 +11,8 @@ from pydantic import BaseModel, ConfigDict, Field
 class McpOAuthConfig(BaseModel):
     """OAuth configuration for an MCP server (HTTP/SSE transports)."""
 
+    model_config = ConfigDict(extra="allow", frozen=True)
+
     enabled: bool = Field(default=True, description="Whether OAuth token injection is enabled")
     token_url: str = Field(description="OAuth token endpoint URL")
     grant_type: Literal["client_credentials", "refresh_token"] = Field(
@@ -28,11 +30,12 @@ class McpOAuthConfig(BaseModel):
     default_token_type: str = Field(default="Bearer", description="Default token type when missing in token response")
     refresh_skew_seconds: int = Field(default=60, description="Refresh token this many seconds before expiry")
     extra_token_params: dict[str, str] = Field(default_factory=dict, description="Additional form params sent to token endpoint")
-    model_config = ConfigDict(extra="allow")
 
 
 class McpServerConfig(BaseModel):
     """Configuration for a single MCP server."""
+
+    model_config = ConfigDict(extra="allow", frozen=True)
 
     enabled: bool = Field(default=True, description="Whether this MCP server is enabled")
     type: str = Field(default="stdio", description="Transport type: 'stdio', 'sse', or 'http'")
@@ -43,11 +46,12 @@ class McpServerConfig(BaseModel):
     headers: dict[str, str] = Field(default_factory=dict, description="HTTP headers to send (for sse or http type)")
     oauth: McpOAuthConfig | None = Field(default=None, description="OAuth configuration (for sse or http type)")
     description: str = Field(default="", description="Human-readable description of what this MCP server provides")
-    model_config = ConfigDict(extra="allow")
 
 
 class SkillStateConfig(BaseModel):
     """Configuration for a single skill's state."""
+
+    model_config = ConfigDict(frozen=True)
 
     enabled: bool = Field(default=True, description="Whether this skill is enabled")
 
@@ -64,7 +68,7 @@ class ExtensionsConfig(BaseModel):
         default_factory=dict,
         description="Map of skill name to state configuration",
     )
-    model_config = ConfigDict(extra="allow", populate_by_name=True)
+    model_config = ConfigDict(extra="allow", frozen=True, populate_by_name=True)
 
     @classmethod
     def resolve_config_path(cls, config_path: str | None = None) -> Path | None:

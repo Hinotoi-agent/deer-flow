@@ -2,13 +2,15 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 StreamBridgeType = Literal["memory", "redis"]
 
 
 class StreamBridgeConfig(BaseModel):
     """Configuration for the stream bridge that connects agent workers to SSE endpoints."""
+
+    model_config = ConfigDict(frozen=True)
 
     type: StreamBridgeType = Field(
         default="memory",

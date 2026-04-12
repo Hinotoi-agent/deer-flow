@@ -5,10 +5,7 @@ from deerflow.config.memory_config import MemoryConfig
 
 
 def _memory_config(**overrides: object) -> MemoryConfig:
-    config = MemoryConfig()
-    for key, value in overrides.items():
-        setattr(config, key, value)
-    return config
+    return MemoryConfig(**overrides)
 
 
 def test_queue_add_preserves_existing_correction_flag_for_same_thread() -> None:

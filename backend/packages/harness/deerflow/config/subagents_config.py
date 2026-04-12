@@ -2,13 +2,15 @@
 
 import logging
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 logger = logging.getLogger(__name__)
 
 
 class SubagentOverrideConfig(BaseModel):
     """Per-agent configuration overrides."""
+
+    model_config = ConfigDict(frozen=True)
 
     timeout_seconds: int | None = Field(
         default=None,
@@ -24,6 +26,8 @@ class SubagentOverrideConfig(BaseModel):
 
 class SubagentsAppConfig(BaseModel):
     """Configuration for the subagent system."""
+
+    model_config = ConfigDict(frozen=True)
 
     timeout_seconds: int = Field(
         default=900,

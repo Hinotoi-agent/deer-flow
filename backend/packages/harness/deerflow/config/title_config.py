@@ -1,10 +1,12 @@
 """Configuration for automatic thread title generation."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TitleConfig(BaseModel):
     """Configuration for automatic thread title generation."""
+
+    model_config = ConfigDict(frozen=True)
 
     enabled: bool = Field(
         default=True,

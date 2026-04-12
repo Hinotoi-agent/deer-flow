@@ -1,10 +1,12 @@
 """Configuration for memory mechanism."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MemoryConfig(BaseModel):
     """Configuration for global memory mechanism."""
+
+    model_config = ConfigDict(frozen=True)
 
     enabled: bool = Field(
         default=True,

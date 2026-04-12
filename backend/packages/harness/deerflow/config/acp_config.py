@@ -3,13 +3,15 @@
 import logging
 from collections.abc import Mapping
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 logger = logging.getLogger(__name__)
 
 
 class ACPAgentConfig(BaseModel):
     """Configuration for a single ACP-compatible agent."""
+
+    model_config = ConfigDict(frozen=True)
 
     command: str = Field(description="Command to launch the ACP agent subprocess")
     args: list[str] = Field(default_factory=list, description="Additional command arguments")
