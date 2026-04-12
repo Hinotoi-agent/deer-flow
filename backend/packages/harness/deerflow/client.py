@@ -550,10 +550,10 @@ class DeerFlowClient:
         config = self._get_runnable_config(thread_id, **kwargs)
         self._ensure_agent(config)
 
+        from deerflow.config.deer_flow_context import DeerFlowContext
+
         state: dict[str, Any] = {"messages": [HumanMessage(content=message)]}
-        context = {"thread_id": thread_id}
-        if self._agent_name:
-            context["agent_name"] = self._agent_name
+        context = DeerFlowContext(app_config=self._app_config)
 
         seen_ids: set[str] = set()
         # Cross-mode handoff: ids already streamed via LangGraph ``messages``

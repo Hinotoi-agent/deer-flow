@@ -249,8 +249,8 @@ class TestStream:
         # Verify context passed to agent.stream
         agent.stream.assert_called_once()
         call_kwargs = agent.stream.call_args.kwargs
-        assert call_kwargs["context"]["thread_id"] == "t1"
-        assert call_kwargs["context"]["agent_name"] == "test-agent-1"
+        ctx = call_kwargs["context"]
+        assert ctx.app_config is client._app_config
 
     def test_custom_mode_is_normalized_to_string(self, client):
         """stream() forwards custom events even when the mode is not a plain string."""
