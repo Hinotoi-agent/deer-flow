@@ -55,7 +55,7 @@ class AppConfig(BaseModel):
     memory: MemoryConfig = Field(default_factory=MemoryConfig, description="Memory subsystem configuration")
     subagents: SubagentsAppConfig = Field(default_factory=SubagentsAppConfig, description="Subagent runtime configuration")
     guardrails: GuardrailsConfig = Field(default_factory=GuardrailsConfig, description="Guardrail middleware configuration")
-    model_config = ConfigDict(extra="allow", frozen=False)
+    model_config = ConfigDict(extra="allow", frozen=True)
     checkpointer: CheckpointerConfig | None = Field(default=None, description="Checkpointer configuration")
     stream_bridge: StreamBridgeConfig | None = Field(default=None, description="Stream bridge configuration")
 
