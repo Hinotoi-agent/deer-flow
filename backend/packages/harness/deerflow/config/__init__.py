@@ -1,4 +1,5 @@
-from .app_config import get_app_config
+from .app_config import AppConfig
+from .context import get_app_config, init_app_config
 from .extensions_config import ExtensionsConfig, get_extensions_config
 from .memory_config import MemoryConfig, get_memory_config
 from .paths import Paths, get_paths
@@ -13,18 +14,20 @@ from .tracing_config import (
 )
 
 __all__ = [
-    "get_app_config",
-    "SkillEvolutionConfig",
-    "Paths",
-    "get_paths",
-    "SkillsConfig",
+    "AppConfig",
     "ExtensionsConfig",
-    "get_extensions_config",
     "MemoryConfig",
-    "get_memory_config",
-    "get_tracing_config",
-    "get_explicitly_enabled_tracing_providers",
+    "Paths",
+    "SkillEvolutionConfig",
+    "SkillsConfig",
+    "get_app_config",
     "get_enabled_tracing_providers",
+    "get_explicitly_enabled_tracing_providers",
+    "get_extensions_config",
+    "get_memory_config",
+    "get_paths",
+    "get_tracing_config",
+    "init_app_config",
     "is_tracing_enabled",
     "validate_enabled_tracing_providers",
 ]
