@@ -274,9 +274,9 @@ def _get_mcp_allowed_paths() -> list[str]:
     """Get the list of allowed paths from MCP config for file system server."""
     allowed_paths = []
     try:
-        from deerflow.config.extensions_config import get_extensions_config
+        from deerflow.config.context import get_app_config
 
-        extensions_config = get_extensions_config()
+        extensions_config = get_app_config().extensions
 
         for _, server in extensions_config.mcp_servers.items():
             if not server.enabled:

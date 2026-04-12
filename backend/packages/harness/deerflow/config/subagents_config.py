@@ -1,10 +1,6 @@
 """Configuration for the subagent system loaded from config.yaml."""
 
-import logging
-
 from pydantic import BaseModel, ConfigDict, Field
-
-logger = logging.getLogger(__name__)
 
 
 class SubagentOverrideConfig(BaseModel):
@@ -66,41 +62,3 @@ class SubagentsAppConfig(BaseModel):
         if self.max_turns is not None:
             return self.max_turns
         return builtin_default
-
-
-_subagents_config: SubagentsAppConfig = SubagentsAppConfig()
-
-
-def get_subagents_app_config() -> SubagentsAppConfig:
-    """Get the current subagents configuration."""
-    return _subagents_config
-
-
-def load_subagents_config_from_dict(config_dict: dict) -> None:
-    """Load subagents configuration from a dictionary."""
-    global _subagents_config
-    _subagents_config = SubagentsAppConfig(**config_dict)
-
-    overrides_summary = {}
-    for name, override in _subagents_config.agents.items():
-        parts = []
-        if override.timeout_seconds is not None:
-            parts.append(f"timeout={override.timeout_seconds}s")
-        if override.max_turns is not None:
-            parts.append(f"max_turns={override.max_turns}")
-        if parts:
-            overrides_summary[name] = ", ".join(parts)
-
-    if overrides_summary:
-        logger.info(
-            "Subagents config loaded: default timeout=%ss, default max_turns=%s, per-agent overrides=%s",
-            _subagents_config.timeout_seconds,
-            _subagents_config.max_turns,
-            overrides_summary,
-        )
-    else:
-        logger.info(
-            "Subagents config loaded: default timeout=%ss, default max_turns=%s, no per-agent overrides",
-            _subagents_config.timeout_seconds,
-            _subagents_config.max_turns,
-        )

@@ -128,6 +128,9 @@ def test_build_middlewares_uses_resolved_model_name_for_vision(monkeypatch):
         ]
     )
 
+    from deerflow.config.context import init_app_config
+
+    init_app_config(app_config)
     monkeypatch.setattr(lead_agent_module, "get_app_config", lambda: app_config)
     monkeypatch.setattr(lead_agent_module, "_create_summarization_middleware", lambda: None)
     monkeypatch.setattr(lead_agent_module, "_create_todo_list_middleware", lambda is_plan_mode: None)
@@ -140,11 +143,12 @@ def test_build_middlewares_uses_resolved_model_name_for_vision(monkeypatch):
 
 
 def test_create_summarization_middleware_uses_configured_model_alias(monkeypatch):
-    monkeypatch.setattr(
-        lead_agent_module,
-        "get_summarization_config",
-        lambda: SummarizationConfig(enabled=True, model_name="model-masswork"),
-    )
+    from deerflow.config.context import init_app_config
+
+    app_config = _make_app_config([_make_model("default", supports_thinking=False)])
+    patched = app_config.model_copy(update={"summarization": SummarizationConfig(enabled=True, model_name="model-masswork")})
+    init_app_config(patched)
+    monkeypatch.setattr(lead_agent_module, "get_app_config", lambda: patched)
 
     captured: dict[str, object] = {}
     fake_model = object()

@@ -115,19 +115,10 @@ def get_store() -> BaseStore:
     if _store is not None:
         return _store
 
-    # Lazily load app config, mirroring the checkpointer singleton pattern so
-    # that tests that set the global checkpointer config explicitly remain isolated.
-    from deerflow.config.app_config import _app_config
-    from deerflow.config.checkpointer_config import get_checkpointer_config
-
-    config = get_checkpointer_config()
-
-    if config is None and _app_config is None:
-        try:
-            get_app_config()
-        except FileNotFoundError:
-            pass
-        config = get_checkpointer_config()
+    try:
+        config = get_app_config().checkpointer
+    except (LookupError, FileNotFoundError):
+        config = None
 
     if config is None:
         from langgraph.store.memory import InMemoryStore

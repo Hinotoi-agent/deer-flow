@@ -6,7 +6,7 @@ import sys
 import pytest
 from langchain_core.tools import tool as langchain_tool
 
-from deerflow.config.tool_search_config import ToolSearchConfig, load_tool_search_config_from_dict
+from deerflow.config.tool_search_config import ToolSearchConfig
 from deerflow.tools.builtins.tool_search import (
     DeferredToolRegistry,
     get_deferred_registry,
@@ -62,12 +62,12 @@ class TestToolSearchConfig:
         config = ToolSearchConfig(enabled=True)
         assert config.enabled is True
 
-    def test_load_from_dict(self):
-        config = load_tool_search_config_from_dict({"enabled": True})
+    def test_validate_from_dict(self):
+        config = ToolSearchConfig.model_validate({"enabled": True})
         assert config.enabled is True
 
-    def test_load_from_empty_dict(self):
-        config = load_tool_search_config_from_dict({})
+    def test_validate_from_empty_dict(self):
+        config = ToolSearchConfig.model_validate({})
         assert config.enabled is False
 
 

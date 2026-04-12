@@ -94,9 +94,9 @@ def _build_runtime_middlewares(
     middlewares.append(LLMErrorHandlingMiddleware())
 
     # Guardrail middleware (if configured)
-    from deerflow.config.guardrails_config import get_guardrails_config
+    from deerflow.config import get_app_config
 
-    guardrails_config = get_guardrails_config()
+    guardrails_config = get_app_config().guardrails
     if guardrails_config.enabled and guardrails_config.provider:
         import inspect
 

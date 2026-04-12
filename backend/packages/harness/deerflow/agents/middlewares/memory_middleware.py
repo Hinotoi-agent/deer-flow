@@ -10,7 +10,7 @@ from langgraph.config import get_config
 from langgraph.runtime import Runtime
 
 from deerflow.agents.memory.queue import get_memory_queue
-from deerflow.config.memory_config import get_memory_config
+from deerflow.config.context import get_app_config
 
 logger = logging.getLogger(__name__)
 
@@ -203,7 +203,7 @@ class MemoryMiddleware(AgentMiddleware[MemoryMiddlewareState]):
         Returns:
             None (no state changes needed from this middleware).
         """
-        config = get_memory_config()
+        config = get_app_config().memory
         if not config.enabled:
             return None
 

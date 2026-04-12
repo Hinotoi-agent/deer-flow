@@ -7,6 +7,7 @@ import yaml
 from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict, Field
 
+from deerflow.config.acp_config import ACPAgentConfig
 from deerflow.config.checkpointer_config import CheckpointerConfig
 from deerflow.config.extensions_config import ExtensionsConfig
 from deerflow.config.guardrails_config import GuardrailsConfig
@@ -56,6 +57,7 @@ class AppConfig(BaseModel):
     model_config = ConfigDict(extra="allow", frozen=True)
     checkpointer: CheckpointerConfig | None = Field(default=None, description="Checkpointer configuration")
     stream_bridge: StreamBridgeConfig | None = Field(default=None, description="Stream bridge configuration")
+    acp_agents: dict[str, ACPAgentConfig] = Field(default_factory=dict, description="ACP agent configurations keyed by agent name")
 
     @classmethod
     def resolve_config_path(cls, config_path: str | None = None) -> Path:

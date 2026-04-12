@@ -16,7 +16,7 @@ from deerflow.agents.memory.storage import (
     get_memory_storage,
     utc_now_iso_z,
 )
-from deerflow.config.memory_config import get_memory_config
+from deerflow.config.context import get_app_config
 from deerflow.models import create_chat_model
 
 logger = logging.getLogger(__name__)
@@ -265,7 +265,7 @@ class MemoryUpdater:
 
     def _get_model(self):
         """Get the model for memory updates."""
-        config = get_memory_config()
+        config = get_app_config().memory
         model_name = self._model_name or config.model_name
         return create_chat_model(name=model_name, thinking_enabled=False)
 
@@ -289,7 +289,7 @@ class MemoryUpdater:
         Returns:
             True if update was successful, False otherwise.
         """
-        config = get_memory_config()
+        config = get_app_config().memory
         if not config.enabled:
             return False
 
@@ -378,7 +378,7 @@ class MemoryUpdater:
         Returns:
             Updated memory data.
         """
-        config = get_memory_config()
+        config = get_app_config().memory
         now = utc_now_iso_z()
 
         # Update user sections

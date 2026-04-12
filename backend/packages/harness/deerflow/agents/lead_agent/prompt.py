@@ -518,9 +518,9 @@ def _get_memory_context(agent_name: str | None = None) -> str:
     """
     try:
         from deerflow.agents.memory import format_memory_for_injection, get_memory_data
-        from deerflow.config.memory_config import get_memory_config
+        from deerflow.config.context import get_app_config
 
-        config = get_memory_config()
+        config = get_app_config().memory
         if not config.enabled or not config.injection_enabled:
             return ""
 
@@ -635,9 +635,9 @@ def get_deferred_tools_prompt_section() -> str:
 def _build_acp_section() -> str:
     """Build the ACP agent prompt section, only if ACP agents are configured."""
     try:
-        from deerflow.config.acp_config import get_acp_agents
+        from deerflow.config.context import get_app_config
 
-        agents = get_acp_agents()
+        agents = get_app_config().acp_agents
         if not agents:
             return ""
     except Exception:

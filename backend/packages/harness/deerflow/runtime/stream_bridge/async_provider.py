@@ -17,7 +17,7 @@ import contextlib
 import logging
 from collections.abc import AsyncIterator
 
-from deerflow.config.stream_bridge_config import get_stream_bridge_config
+from deerflow.config.context import get_app_config
 
 from .base import StreamBridge
 
@@ -32,7 +32,7 @@ async def make_stream_bridge(config=None) -> AsyncIterator[StreamBridge]:
     provided and nothing is set globally.
     """
     if config is None:
-        config = get_stream_bridge_config()
+        config = get_app_config().stream_bridge
 
     if config is None or config.type == "memory":
         from deerflow.runtime.stream_bridge.memory import MemoryStreamBridge
