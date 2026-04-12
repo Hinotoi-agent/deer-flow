@@ -16,9 +16,7 @@ def _clone_title_config(config: TitleConfig) -> TitleConfig:
 
 
 def _set_test_title_config(**overrides) -> TitleConfig:
-    config = _clone_title_config(get_title_config())
-    for key, value in overrides.items():
-        setattr(config, key, value)
+    config = get_title_config().model_copy(update=overrides)
     set_title_config(config)
     return config
 

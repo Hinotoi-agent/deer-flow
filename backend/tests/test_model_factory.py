@@ -744,7 +744,7 @@ def test_thinking_disabled_vllm_chat_template_format(monkeypatch):
         supports_thinking=True,
         when_thinking_enabled=wte,
     )
-    model.extra_body = {"top_k": 20}
+    model = model.model_copy(update={"extra_body": {"top_k": 20}})
     cfg = _make_app_config([model])
     _patch_factory(monkeypatch, cfg)
 
@@ -771,7 +771,7 @@ def test_thinking_disabled_vllm_enable_thinking_format(monkeypatch):
         supports_thinking=True,
         when_thinking_enabled=wte,
     )
-    model.extra_body = {"top_k": 20}
+    model = model.model_copy(update={"extra_body": {"top_k": 20}})
     cfg = _make_app_config([model])
     _patch_factory(monkeypatch, cfg)
 

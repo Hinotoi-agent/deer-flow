@@ -32,10 +32,7 @@ def _make_memory(facts: list[dict[str, object]] | None = None) -> dict[str, obje
 
 
 def _memory_config(**overrides: object) -> MemoryConfig:
-    config = MemoryConfig()
-    for key, value in overrides.items():
-        setattr(config, key, value)
-    return config
+    return MemoryConfig().model_copy(update=overrides)
 
 
 def test_apply_updates_skips_existing_duplicate_and_preserves_removals() -> None:

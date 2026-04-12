@@ -276,7 +276,7 @@ class TestDeferredToolsPromptSection:
         from deerflow.agents.lead_agent.prompt import get_deferred_tools_prompt_section
         from deerflow.config import get_app_config
 
-        monkeypatch.setattr(get_app_config().tool_search, "enabled", True)
+        get_app_config().tool_search = ToolSearchConfig(enabled=True)
         section = get_deferred_tools_prompt_section()
         assert section == ""
 
@@ -284,7 +284,7 @@ class TestDeferredToolsPromptSection:
         from deerflow.agents.lead_agent.prompt import get_deferred_tools_prompt_section
         from deerflow.config import get_app_config
 
-        monkeypatch.setattr(get_app_config().tool_search, "enabled", True)
+        get_app_config().tool_search = ToolSearchConfig(enabled=True)
         set_deferred_registry(DeferredToolRegistry())
         section = get_deferred_tools_prompt_section()
         assert section == ""
@@ -293,7 +293,7 @@ class TestDeferredToolsPromptSection:
         from deerflow.agents.lead_agent.prompt import get_deferred_tools_prompt_section
         from deerflow.config import get_app_config
 
-        monkeypatch.setattr(get_app_config().tool_search, "enabled", True)
+        get_app_config().tool_search = ToolSearchConfig(enabled=True)
         set_deferred_registry(registry)
         section = get_deferred_tools_prompt_section()
         assert "<available-deferred-tools>" in section
