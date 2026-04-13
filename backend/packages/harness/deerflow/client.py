@@ -553,7 +553,7 @@ class DeerFlowClient:
         from deerflow.config.deer_flow_context import DeerFlowContext
 
         state: dict[str, Any] = {"messages": [HumanMessage(content=message)]}
-        context = DeerFlowContext(app_config=self._app_config)
+        context = DeerFlowContext(app_config=self._app_config, thread_id=thread_id)
 
         seen_ids: set[str] = set()
         # Cross-mode handoff: ids already streamed via LangGraph ``messages``
