@@ -55,30 +55,59 @@ Consumers migrate from `get_memory_config()` → `get_app_config().memory`.
 
 #### Agent path: `Runtime[DeerFlowContext]`
 
-LangGraph's official DI mechanism. Config is injected per-invocation, type-safe.
+LangGraph's official DI mechanism. Context is injected per-invocation, type-safe.
 
 ```python
 @dataclass(frozen=True)
 class DeerFlowContext:
     app_config: AppConfig
-
-agent = create_agent(model="...", tools=[...], context_schema=DeerFlowContext)
-agent.invoke(messages, context=DeerFlowContext(app_config=config))
+    thread_id: str
+    agent_name: str | None = None
 ```
 
-Middleware and tools access config through typed parameters:
+**Fields:**
+
+| Field | Type | Source | Mutability |
+|-------|------|--------|-----------|
+| `app_config` | `AppConfig` | ContextVar (`get_app_config()`) | Immutable per-run |
+| `thread_id` | `str` | Caller-provided | Immutable per-run |
+| `agent_name` | `str \| None` | Caller-provided (bootstrap only) | Immutable per-run |
+
+**Not in context:** `sandbox_id` is mutable runtime state (lazy-acquired mid-execution). It flows through `ThreadState.sandbox` (state channel), not context. The 3 existing `runtime.context["sandbox_id"] = ...` writes in `sandbox/tools.py` are removed; `SandboxMiddleware.after_agent` reads from `state["sandbox"]` only.
+
+**Construction per entry point (Gateway is primary):**
 
 ```python
+# Gateway runtime (worker.py) — primary path
+context = DeerFlowContext(app_config=get_app_config(), thread_id=thread_id)
+agent.astream(input, config=config, context=context)
+
+# DeerFlowClient (client.py)
+context = DeerFlowContext(app_config=self._app_config, thread_id=thread_id)
+agent.stream(input, config=config, context=context)
+
+# LangGraph Server — legacy path, context=None, fallback via resolve_context()
+```
+
+**Access in middleware/tools:**
+
+```python
+from deerflow.config.deer_flow_context import DeerFlowContext, resolve_context
+
+# Middleware
+def before_model(self, state, runtime: Runtime[DeerFlowContext]):
+    ctx = resolve_context(runtime)
+    ctx.app_config.title     # typed
+    ctx.thread_id             # typed
+
 # Tool
 @tool
 def my_tool(runtime: ToolRuntime[DeerFlowContext]) -> str:
-    runtime.context.app_config.memory  # typed
-
-# Middleware
-@before_model
-def hook(state, runtime: Runtime[DeerFlowContext]):
-    runtime.context.app_config.title  # typed
+    ctx = resolve_context(runtime)
+    ctx.app_config.memory    # typed
 ```
+
+`resolve_context()` returns `runtime.context` directly when it's already a `DeerFlowContext` (Gateway/Client paths). For legacy LangGraph Server path (context is None), it falls back to constructing from ContextVar + `configurable`.
 
 Why `Runtime` over `RunnableConfig.configurable`:
 - `Runtime` is LangGraph's official DI, not a private dict hack

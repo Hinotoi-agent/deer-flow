@@ -758,103 +758,281 @@ git commit -m "refactor(config): Gateway updates construct new config instead of
 
 ---
 
-## Task 10: Create `DeerFlowContext` and wire into agent creation
+## Task 10: Create `DeerFlowContext` and wire into agent creation ✅
+
+Completed. `DeerFlowContext` with `app_config` field created, wired into `create_agent(context_schema=DeerFlowContext)` and `DeerFlowClient.stream(context=...)`.
+
+---
+
+## Task 11: Expand DeerFlowContext with `thread_id` and `agent_name`, add `resolve_context()`
+
+Expand `DeerFlowContext` from config-only to full per-invocation context. Add `resolve_context()` helper for unified access across all entry points.
 
 **Files:**
-- Create: `deerflow/config/deer_flow_context.py`
-- Modify: `deerflow/agents/lead_agent/agent.py`
-- Modify: `deerflow/client.py`
-- Test: `tests/test_deer_flow_context.py`
+- Modify: `deerflow/config/deer_flow_context.py`
+- Test: `tests/test_deer_flow_context.py` (extend)
 
-- [ ] **Step 1: Write test for DeerFlowContext**
+- [ ] **Step 1: Write tests for expanded DeerFlowContext**
 
 ```python
-# tests/test_deer_flow_context.py
-import pytest
-from dataclasses import FrozenInstanceError
-from deerflow.config.deer_flow_context import DeerFlowContext
-from deerflow.config.app_config import AppConfig
-from deerflow.config.sandbox_config import SandboxConfig
+# Extend tests/test_deer_flow_context.py
+from unittest.mock import patch
+from deerflow.config.deer_flow_context import DeerFlowContext, resolve_context
 
-
-def test_deer_flow_context_is_frozen():
+def test_deer_flow_context_fields():
     config = AppConfig(sandbox=SandboxConfig(use="test"))
-    ctx = DeerFlowContext(app_config=config)
-    with pytest.raises(FrozenInstanceError):
-        ctx.app_config = config
+    ctx = DeerFlowContext(app_config=config, thread_id="t1", agent_name="test-agent")
+    assert ctx.thread_id == "t1"
+    assert ctx.agent_name == "test-agent"
+    assert ctx.app_config is config
+
+def test_deer_flow_context_agent_name_default():
+    config = AppConfig(sandbox=SandboxConfig(use="test"))
+    ctx = DeerFlowContext(app_config=config, thread_id="t1")
+    assert ctx.agent_name is None
+
+def test_resolve_context_returns_typed_context():
+    """When runtime.context is DeerFlowContext, return it directly."""
+    config = AppConfig(sandbox=SandboxConfig(use="test"))
+    ctx = DeerFlowContext(app_config=config, thread_id="t1")
+    runtime = MagicMock()
+    runtime.context = ctx
+    assert resolve_context(runtime) is ctx
+
+def test_resolve_context_fallback_from_configurable():
+    """When runtime.context is None (LangGraph Server), fallback to configurable."""
+    runtime = MagicMock()
+    runtime.context = None
+    config = AppConfig(sandbox=SandboxConfig(use="test"))
+    with patch("deerflow.config.deer_flow_context.get_app_config", return_value=config), \
+         patch("deerflow.config.deer_flow_context.get_config", return_value={"configurable": {"thread_id": "t2", "agent_name": "ag"}}):
+        ctx = resolve_context(runtime)
+        assert ctx.thread_id == "t2"
+        assert ctx.agent_name == "ag"
+        assert ctx.app_config is config
 ```
 
-- [ ] **Step 2: Run test — should fail**
-
-- [ ] **Step 3: Create `deerflow/config/deer_flow_context.py`**
+- [ ] **Step 2: Update `deer_flow_context.py`**
 
 ```python
 """Per-invocation context for DeerFlow agent execution."""
+from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from deerflow.config.app_config import AppConfig
 
 
 @dataclass(frozen=True)
 class DeerFlowContext:
-    """Typed, immutable, per-invocation context injected via LangGraph Runtime.
-
-    Middleware and tools access this via Runtime[DeerFlowContext] or
-    ToolRuntime[DeerFlowContext] parameters.
-    """
-
+    """Typed, immutable, per-invocation context injected via LangGraph Runtime."""
     app_config: AppConfig
+    thread_id: str
+    agent_name: str | None = None
+
+
+def resolve_context(runtime: Any) -> DeerFlowContext:
+    """Extract or construct DeerFlowContext from runtime.
+
+    Gateway/Client paths: runtime.context is already DeerFlowContext → return directly.
+    LangGraph Server path: runtime.context is None → fallback to ContextVar + configurable.
+    """
+    if isinstance(runtime.context, DeerFlowContext):
+        return runtime.context
+    from langgraph.config import get_config
+    from deerflow.config import get_app_config
+    cfg = get_config().get("configurable", {})
+    return DeerFlowContext(
+        app_config=get_app_config(),
+        thread_id=cfg.get("thread_id", ""),
+        agent_name=cfg.get("agent_name"),
+    )
 ```
 
-- [ ] **Step 4: Run test — should pass**
+- [ ] **Step 3: Run tests**
 
-- [ ] **Step 5: Wire into `make_lead_agent` in `agent.py`**
-
-This step depends on the exact LangGraph `create_agent` API for `context_schema`. Add `context_schema=DeerFlowContext` to the `create_agent()` call in `make_lead_agent`.
-
-- [ ] **Step 6: Wire into `DeerFlowClient`**
-
-Update `stream()` and `chat()` to pass `context=DeerFlowContext(app_config=self._app_config)` in the invocation.
-
-- [ ] **Step 7: Run full test suite**
-
-- [ ] **Step 8: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add -A
-git commit -m "feat(config): add DeerFlowContext and wire into agent creation"
+git commit -m "refactor(config): expand DeerFlowContext with thread_id, agent_name, resolve_context()"
 ```
 
 ---
 
-## Task 11: Migrate middleware to read config from Runtime
+## Task 12: Remove sandbox_id from runtime.context
 
-Convert middleware from `__init__`-capture / global getter to reading from `Runtime[DeerFlowContext]` at execution time.
+Remove the mutable `sandbox_id` side channel from `runtime.context`. All sandbox_id access goes through `ThreadState.sandbox` (state channel).
 
 **Files:**
-- Modify: `deerflow/agents/middlewares/memory_middleware.py`
-- Modify: `deerflow/agents/middlewares/title_middleware.py`
+- Modify: `deerflow/sandbox/tools.py` — delete 3× `runtime.context["sandbox_id"] = sandbox_id`
+- Modify: `deerflow/sandbox/middleware.py` — delete context fallback in `after_agent`
+- Test: `tests/test_sandbox_*.py` (verify existing tests still pass)
+
+- [ ] **Step 1: Delete sandbox_id writes from `sandbox/tools.py`**
+
+Remove lines:
+- `tools.py:813`: `runtime.context["sandbox_id"] = sandbox_id`
+- `tools.py:849`: `runtime.context["sandbox_id"] = sandbox_id`
+- `tools.py:872`: `runtime.context["sandbox_id"] = sandbox_id`
+
+- [ ] **Step 2: Delete context fallback from `sandbox/middleware.py:after_agent`**
+
+Remove lines 76-80:
+```python
+# DELETE:
+if (runtime.context or {}).get("sandbox_id") is not None:
+    sandbox_id = runtime.context.get("sandbox_id")
+    logger.info(f"Releasing sandbox {sandbox_id} from context")
+    get_sandbox_provider().release(sandbox_id)
+    return None
+```
+
+The state-based path (lines 69-74) already handles all cases.
+
+- [ ] **Step 3: Run sandbox tests**
+
+Run: `cd backend && PYTHONPATH=. uv run pytest tests/ -k sandbox -v`
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add -A
+git commit -m "refactor(sandbox): remove sandbox_id from runtime.context, use state channel only"
+```
+
+---
+
+## Task 13: Wire DeerFlowContext into Gateway runtime and DeerFlowClient
+
+Update the two primary entry points to construct and pass full `DeerFlowContext`.
+
+**Files:**
+- Modify: `deerflow/runtime/runs/worker.py` — replace dict context with DeerFlowContext
+- Modify: `deerflow/client.py` — add thread_id to DeerFlowContext construction
+- Test: existing client/runtime tests
+
+- [ ] **Step 1: Update `worker.py`**
+
+Replace:
+```python
+runtime = Runtime(context={"thread_id": thread_id}, store=store)
+```
+With:
+```python
+from deerflow.config.deer_flow_context import DeerFlowContext
+from deerflow.config import get_app_config
+
+context = DeerFlowContext(app_config=get_app_config(), thread_id=thread_id)
+```
+And pass `context=context` to the `agent.astream()` call instead of injecting `__pregel_runtime` manually.
+
+Also remove the dict-style `config["context"].setdefault("thread_id", ...)` line.
+
+- [ ] **Step 2: Update `client.py`**
+
+Replace:
+```python
+context = DeerFlowContext(app_config=self._app_config)
+```
+With:
+```python
+context = DeerFlowContext(app_config=self._app_config, thread_id=thread_id)
+```
+
+Where `thread_id` comes from the `kwargs` or config.
+
+- [ ] **Step 3: Run full test suite**
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add -A
+git commit -m "refactor(config): wire DeerFlowContext into Gateway runtime and DeerFlowClient"
+```
+
+---
+
+## Task 14: Migrate middleware/tools from dict access to `resolve_context()`
+
+Replace all `runtime.context.get("thread_id")` / `(runtime.context or {}).get(...)` patterns with `resolve_context(runtime).thread_id`.
+
+**Files (middleware):**
+- `deerflow/agents/middlewares/thread_data_middleware.py`
+- `deerflow/agents/middlewares/uploads_middleware.py`
+- `deerflow/agents/middlewares/memory_middleware.py`
+- `deerflow/agents/middlewares/loop_detection_middleware.py`
+- `deerflow/sandbox/middleware.py`
+
+**Files (tools):**
+- `deerflow/tools/builtins/present_file_tool.py`
+- `deerflow/tools/builtins/setup_agent_tool.py`
+- `deerflow/tools/builtins/task_tool.py`
+- `deerflow/tools/skill_manage_tool.py`
+- `deerflow/sandbox/tools.py`
+
+- [ ] **Step 1: Update all middleware**
+
+Pattern:
+```python
+# Before
+thread_id = (runtime.context or {}).get("thread_id")
+if thread_id is None:
+    config = get_config()
+    thread_id = config.get("configurable", {}).get("thread_id")
+
+# After
+from deerflow.config.deer_flow_context import resolve_context
+ctx = resolve_context(runtime)
+thread_id = ctx.thread_id
+```
+
+- [ ] **Step 2: Update all tools**
+
+Same pattern. For tools using `ToolRuntime`, `resolve_context()` works identically.
+
+- [ ] **Step 3: Fix tests**
+
+Tests that mock `runtime.context` as a dict need to either:
+- Pass a `DeerFlowContext` instance
+- Or mock `runtime.context = None` with configurable fallback (LangGraph Server path)
+
+- [ ] **Step 4: Run full test suite**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add -A
+git commit -m "refactor(config): migrate middleware/tools to resolve_context() typed access"
+```
+
+---
+
+## Task 15: Migrate middleware to read config from Runtime
+
+Convert middleware from global getter to reading `app_config` from `resolve_context()` at execution time.
+
+**Files:**
+- Modify: `deerflow/agents/middlewares/memory_middleware.py` — `get_app_config().memory` → `resolve_context(runtime).app_config.memory`
+- Modify: `deerflow/agents/middlewares/title_middleware.py` — same pattern for `.title`
 - Modify: associated tests
 
 - [ ] **Step 1: Update MemoryMiddleware**
 
-The middleware already imports `Runtime` from `langgraph.runtime`. Update `__call__` to read config from runtime:
-
 ```python
-from deerflow.config.deer_flow_context import DeerFlowContext
-
-class MemoryMiddleware(AgentMiddleware):
-    async def after_model(self, state, runtime: Runtime[DeerFlowContext], response):
-        memory_config = runtime.context.app_config.memory
-        if not memory_config.enabled:
-            return response
-        # ... rest uses memory_config instead of get_memory_config()
+ctx = resolve_context(runtime)
+memory_config = ctx.app_config.memory
+if not memory_config.enabled:
+    return None
 ```
 
 - [ ] **Step 2: Update TitleMiddleware**
 
-Same pattern — read `runtime.context.app_config.title` instead of `get_title_config()`.
+```python
+ctx = resolve_context(runtime)
+title_config = ctx.app_config.title
+```
 
 - [ ] **Step 3: Fix tests**
 
@@ -869,9 +1047,17 @@ git commit -m "refactor(config): middleware reads config from Runtime[DeerFlowCo
 
 ---
 
-## Task 12: Final cleanup and verification
+## Task 16: Final cleanup and verification
 
-- [ ] **Step 1: Grep for any remaining references to deleted functions**
+- [ ] **Step 1: Grep for remaining dict-style context access**
+
+```bash
+cd backend && grep -rn 'runtime\.context\.get\|runtime\.context\[' --include="*.py" packages/ | grep -v __pycache__
+```
+
+Expected: No matches in production code.
+
+- [ ] **Step 2: Grep for remaining deleted function references**
 
 ```bash
 cd backend && grep -rn "get_memory_config\|get_title_config\|get_summarization_config\|get_subagents_app_config\|get_guardrails_config\|get_tool_search_config\|get_checkpointer_config\|get_stream_bridge_config\|get_acp_agents\|reload_app_config\|reload_extensions_config\|reset_app_config\|reset_extensions_config\|reset_guardrails_config\|set_app_config\|set_extensions_config\|push_current_app_config\|pop_current_app_config\|load_memory_config_from_dict\|load_title_config_from_dict" --include="*.py" | grep -v __pycache__
@@ -879,7 +1065,7 @@ cd backend && grep -rn "get_memory_config\|get_title_config\|get_summarization_c
 
 Expected: No matches (or only in comments/docs).
 
-- [ ] **Step 2: Run full test suite**
+- [ ] **Step 3: Run full test suite**
 
 ```bash
 cd backend && PYTHONPATH=. uv run pytest -v
@@ -887,29 +1073,31 @@ cd backend && PYTHONPATH=. uv run pytest -v
 
 Expected: All tests pass.
 
-- [ ] **Step 3: Run linter**
+- [ ] **Step 4: Run linter**
 
 ```bash
 cd backend && make lint
 ```
 
-- [ ] **Step 4: Commit any final fixes**
+- [ ] **Step 5: Commit any final fixes**
 
 ```bash
 git add -A
 git commit -m "refactor(config): final cleanup — remove dead references"
 ```
 
-- [ ] **Step 5: Update CLAUDE.md**
+- [ ] **Step 6: Update CLAUDE.md**
 
 Update the Configuration System section in `backend/CLAUDE.md` to reflect the new architecture:
 - `get_app_config()` backed by ContextVar (no mtime/reload)
 - `init_app_config()` called at process startup
 - Sub-config accessed via `get_app_config().memory`, etc.
-- `DeerFlowContext` for agent execution path
+- `DeerFlowContext` with `thread_id`, `agent_name`, `app_config` for agent execution path
+- `resolve_context()` for unified access across Gateway/Client/LangGraph Server paths
+- `sandbox_id` flows through state channel, not context
 - All config models frozen
 
-- [ ] **Step 6: Commit docs update**
+- [ ] **Step 7: Commit docs update**
 
 ```bash
 git add backend/CLAUDE.md
