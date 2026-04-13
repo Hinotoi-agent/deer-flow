@@ -1,6 +1,7 @@
 import logging
 
-from langchain.agents import CompiledStateGraph, create_agent
+from langchain.agents import create_agent
+from langgraph.graph.state import CompiledStateGraph
 from langchain.agents.middleware import AgentMiddleware, SummarizationMiddleware
 from langchain_core.runnables import RunnableConfig
 
