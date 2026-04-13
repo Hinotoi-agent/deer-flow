@@ -219,7 +219,7 @@ class AppConfig(BaseModel):
 
 # Re-export from context module for backward compatibility.
 # New code should import from deerflow.config or deerflow.config.context directly.
-from deerflow.config.context import get_app_config, init_app_config  # noqa: F401
+from deerflow.config.context import get_app_config, init_app_config  # noqa: E402, F401
 
 
 def reload_app_config(config_path: str | None = None) -> AppConfig:

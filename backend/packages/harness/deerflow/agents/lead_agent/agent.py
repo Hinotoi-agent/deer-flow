@@ -1,9 +1,9 @@
 import logging
 
 from langchain.agents import create_agent
-from langgraph.graph.state import CompiledStateGraph
 from langchain.agents.middleware import AgentMiddleware, SummarizationMiddleware
 from langchain_core.runnables import RunnableConfig
+from langgraph.graph.state import CompiledStateGraph
 
 from deerflow.agents.lead_agent.prompt import apply_prompt_template
 from deerflow.agents.middlewares.clarification_middleware import ClarificationMiddleware
