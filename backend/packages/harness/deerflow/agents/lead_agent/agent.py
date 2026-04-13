@@ -1,6 +1,6 @@
 import logging
 
-from langchain.agents import create_agent
+from langchain.agents import CompiledStateGraph, create_agent
 from langchain.agents.middleware import AgentMiddleware, SummarizationMiddleware
 from langchain_core.runnables import RunnableConfig
 
@@ -270,7 +270,7 @@ def _build_middlewares(config: RunnableConfig, model_name: str | None, agent_nam
     return middlewares
 
 
-def make_lead_agent(config: RunnableConfig):
+def make_lead_agent(config: RunnableConfig) -> CompiledStateGraph:
     # Lazy import to avoid circular dependency
     from deerflow.tools import get_available_tools
     from deerflow.tools.builtins import setup_agent
