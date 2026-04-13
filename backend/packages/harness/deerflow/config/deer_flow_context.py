@@ -27,16 +27,31 @@ def resolve_context(runtime: Any) -> DeerFlowContext:
     """Extract or construct DeerFlowContext from runtime.
 
     Gateway/Client paths: runtime.context is already DeerFlowContext → return directly.
-    LangGraph Server path: runtime.context is None or dict → fallback to ContextVar + configurable.
+    LangGraph Server / legacy dict path: construct from dict context or configurable fallback.
     """
-    if isinstance(runtime.context, DeerFlowContext):
-        return runtime.context
-
-    from langgraph.config import get_config
+    ctx = getattr(runtime, "context", None)
+    if isinstance(ctx, DeerFlowContext):
+        return ctx
 
     from deerflow.config import get_app_config
 
-    cfg = get_config().get("configurable", {})
+    # Try dict context first (legacy path, tests), then configurable
+    if isinstance(ctx, dict):
+        return DeerFlowContext(
+            app_config=get_app_config(),
+            thread_id=ctx.get("thread_id", ""),
+            agent_name=ctx.get("agent_name"),
+        )
+
+    # No context at all — fall back to LangGraph configurable
+    try:
+        from langgraph.config import get_config
+
+        cfg = get_config().get("configurable", {})
+    except RuntimeError:
+        # Outside runnable context (e.g. unit tests)
+        cfg = {}
+
     return DeerFlowContext(
         app_config=get_app_config(),
         thread_id=cfg.get("thread_id", ""),

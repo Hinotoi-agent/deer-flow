@@ -75,14 +75,12 @@ class TestResolveContext:
             assert ctx.agent_name is None
 
     def test_fallback_from_dict_context(self):
-        """Legacy path: runtime.context is a dict → fallback construction."""
+        """Legacy path: runtime.context is a dict → extract from dict directly."""
         runtime = MagicMock()
-        runtime.context = {"thread_id": "old-dict"}
+        runtime.context = {"thread_id": "old-dict", "agent_name": "from-dict"}
         config = _make_config()
-        with (
-            patch("deerflow.config.get_app_config", return_value=config),
-            patch("langgraph.config.get_config", return_value={"configurable": {"thread_id": "from-cfg"}}),
-        ):
+        with patch("deerflow.config.get_app_config", return_value=config):
             ctx = resolve_context(runtime)
-            assert ctx.thread_id == "from-cfg"
+            assert ctx.thread_id == "old-dict"
+            assert ctx.agent_name == "from-dict"
             assert ctx.app_config is config

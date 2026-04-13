@@ -7,6 +7,7 @@ from langgraph.types import Command
 from langgraph.typing import ContextT
 
 from deerflow.agents.thread_state import ThreadState
+from deerflow.config.deer_flow_context import resolve_context
 from deerflow.config.paths import VIRTUAL_PATH_PREFIX, get_paths
 
 OUTPUTS_VIRTUAL_PREFIX = f"{VIRTUAL_PATH_PREFIX}/outputs"
@@ -33,7 +34,8 @@ def _normalize_presented_filepath(
     if runtime.state is None:
         raise ValueError("Thread runtime state is not available")
 
-    thread_id = runtime.context.get("thread_id") if runtime.context else None
+    ctx = resolve_context(runtime)
+    thread_id = ctx.thread_id
     if not thread_id:
         raise ValueError("Thread ID is not available in runtime context")
 

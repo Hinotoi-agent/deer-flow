@@ -6,6 +6,7 @@ from langchain_core.tools import tool
 from langgraph.prebuilt import ToolRuntime
 from langgraph.types import Command
 
+from deerflow.config.deer_flow_context import resolve_context
 from deerflow.config.paths import get_paths
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,8 @@ def setup_agent(
         description: One-line description of what the agent does.
     """
 
-    agent_name: str | None = runtime.context.get("agent_name") if runtime.context else None
+    ctx = resolve_context(runtime)
+    agent_name: str | None = ctx.agent_name
 
     try:
         paths = get_paths()

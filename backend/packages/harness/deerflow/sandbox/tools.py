@@ -8,6 +8,7 @@ from langgraph.typing import ContextT
 
 from deerflow.agents.thread_state import ThreadDataState, ThreadState
 from deerflow.config import get_app_config
+from deerflow.config.deer_flow_context import resolve_context
 from deerflow.config.paths import VIRTUAL_PATH_PREFIX
 from deerflow.sandbox.exceptions import (
     SandboxError,
@@ -847,10 +848,9 @@ def ensure_sandbox_initialized(runtime: ToolRuntime[ContextT, ThreadState] | Non
             # Sandbox was released, fall through to acquire new one
 
     # Lazy acquisition: get thread_id and acquire sandbox
-    thread_id = runtime.context.get("thread_id") if runtime.context else None
-    if thread_id is None:
-        thread_id = runtime.config.get("configurable", {}).get("thread_id") if runtime.config else None
-    if thread_id is None:
+    ctx = resolve_context(runtime)
+    thread_id = ctx.thread_id
+    if not thread_id:
         raise SandboxRuntimeError("Thread ID not available in runtime context")
 
     provider = get_sandbox_provider()
