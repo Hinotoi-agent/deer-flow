@@ -9,7 +9,6 @@ from langchain.agents.middleware import AgentMiddleware
 from langgraph.runtime import Runtime
 
 from deerflow.agents.memory.queue import get_memory_queue
-from deerflow.config.context import get_app_config
 from deerflow.config.deer_flow_context import resolve_context
 
 logger = logging.getLogger(__name__)
@@ -203,12 +202,11 @@ class MemoryMiddleware(AgentMiddleware[MemoryMiddlewareState]):
         Returns:
             None (no state changes needed from this middleware).
         """
-        config = get_app_config().memory
-        if not config.enabled:
+        ctx = resolve_context(runtime)
+        memory_config = ctx.app_config.memory
+        if not memory_config.enabled:
             return None
 
-        # Get thread ID from runtime context (resolve_context handles fallback to configurable)
-        ctx = resolve_context(runtime)
         thread_id = ctx.thread_id
         if not thread_id:
             logger.debug("No thread_id in context, skipping memory update")
